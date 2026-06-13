@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alankar by Gayatri – Jewellery Catalog</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Raleway:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ==================== TOAST ==================== -->
+<div class="toast" id="toast"></div>
+
+
+<!-- ==================== ORDER FORM MODAL ==================== -->
+<div class="modal-overlay" id="orderModal">
+  <div class="modal-box" style="max-width:400px;">
+    <div class="modal-head">
+      <h3>Customer Information</h3>
+      <button class="modal-close" onclick="closeOrderModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label">Full Name *</label>
+        <input type="text" class="form-input" id="orderName" placeholder="Enter your name" required>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Phone Number *</label>
+        <input type="tel" class="form-input" id="orderPhone" placeholder="Enter your phone number" required>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Delivery Address *</label>
+        <textarea class="form-textarea" id="orderAddress" placeholder="Enter delivery address" required></textarea>
+      </div>
+      <div style="font-size:0.75rem; color:var(--text-dim); margin-top:8px; line-height: 1.4;">
+        * We will save your enquiry and redirect you to WhatsApp to confirm.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeOrderModal()">Cancel</button>
+      <button class="btn-save" onclick="processOrder()">Confirm & Enquire</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== ADMIN LOGIN MODAL ==================== -->
+<div class="adminLoginModal" id="adminLoginModal">
+  <div class="login-box">
+    <div class="logo-wrap"><img id="loginLogo" src="" alt="Alankar"></div>
+    <h2>Admin Access</h2>
+    <p>Alankar by Gayatri</p>
+    <div class="login-error" id="loginError">Invalid credentials. Try again.</div>
+    <input type="text" class="login-field" id="loginUser" placeholder="Username" autocomplete="off">
+    <input type="password" class="login-field" id="loginPass" placeholder="Password">
+    <button class="login-btn" onclick="doAdminLogin()">Enter Admin Panel</button>
+    <br><br>
+    <button class="login-close" onclick="closeAdminLogin()">✕ Cancel</button>
+  </div>
+</div>
+
+<!-- ==================== PRODUCT FORM MODAL ==================== -->
+<div class="modal-overlay" id="productModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="modalTitle">Add Product</h3>
+      <button class="modal-close" onclick="closeProductModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editProductId">
+      <div class="form-row">
+        <label class="form-label">Product Name *</label>
+        <input type="text" class="form-input" id="pName" placeholder="e.g. Kundan Necklace Set">
+      </div>
+      <div class="form-row-2">
+        <div class="form-row">
+          <label class="form-label">Category *</label>
+          <select class="form-select" id="pCategory"></select>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Price (₹) *</label>
+          <input type="number" class="form-input" id="pPrice" placeholder="2500">
+        </div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-row">
+          <label class="form-label">Original Price (₹)</label>
+          <input type="number" class="form-input" id="pOrigPrice" placeholder="Optional">
+        </div>
+        <div class="form-row">
+          <label class="form-label">Stock</label>
+          <input type="number" class="form-input" id="pStock" placeholder="10" value="10">
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Description</label>
+        <textarea class="form-textarea" id="pDesc" placeholder="Product description..."></textarea>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Product Image</label>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <input type="file" class="form-input" id="pImageFile" accept="image/*" onchange="previewImage()">
+          <input type="url" class="form-input" id="pImageUrl" placeholder="Or paste image URL (recommended)..." oninput="previewImageUrl()">
+        </div>
+        <input type="hidden" id="pImageData">
+        <img class="img-preview" id="imgPreview" alt="Preview">
+      </div>
+      <div class="form-row">
+        <label class="form-check">
+          <input type="checkbox" id="pVisible" checked>
+          <span>Visible in catalog</span>
+        </label>
+      </div>
+      <div class="form-row">
+        <label class="form-check">
+          <input type="checkbox" id="pFeatured">
+          <span>Mark as Featured / New Arrival</span>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeProductModal()">Cancel</button>
+      <button class="btn-save" onclick="saveProduct()">Save Product</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== CUSTOMER SECTION ==================== -->
+<div id="customerSection">
+
+  <!-- Shared cart banner -->
+  <div class="shared-banner" id="sharedBanner">
+    🔗 You're viewing a shared wishlist from Alankar by Gayatri
+  </div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="header-logo">
+        <img id="headerLogo" src="" alt="Alankar">
+        <div>
+          <span class="brand-text">Alankar</span>
+          <span class="brand-sub">by Gayatri</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="https://www.instagram.com/alankar_by_gayatri?igsh=MXQ5eGoyYmZwa3B6bA%3D%3D&utm_source=qr" target="_blank" class="btn-icon" title="Instagram" id="headerInstaLink">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+          <span>Instagram</span>
+        </a>
+        <button id="themeToggleBtn" class="btn-icon" onclick="toggleTheme()">☀️ Light Mode</button>
+        <button class="btn-icon" onclick="openCart()">
+          🛒 Cart <span class="cart-count" id="cartCount">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <img class="hero-logo" id="heroLogo" src="" alt="Alankar by Gayatri">
+    <h1>Alankar</h1>
+    <p>by Gayatri &nbsp;·&nbsp; Handcrafted Jewellery</p>
+    <div class="hero-line"></div>
+  </section>
+
+  <!-- Category Filter -->
+  <div class="cat-wrap">
+    <div class="cat-inner" id="catFilter"></div>
+  </div>
+
+  <!-- Product Grid -->
+  <div class="catalog-section">
+    <div class="section-header">
+      <h2 id="catalogHeading">All Jewellery</h2>
+      <span id="productCount"></span>
+    </div>
+    <div class="product-grid" id="productGrid"></div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div class="footer-logo">
+          <img id="footerLogo" src="" alt="">
+          <div>
+            <div class="footer-brand-text">Alankar by Gayatri</div>
+            <div class="footer-brand-sub">Handcrafted Jewellery</div>
+          </div>
+        </div>
+        <div class="footer-links">
+          <a href="https://www.instagram.com/alankar_by_gayatri?igsh=MXQ5eGoyYmZwa3B6bA%3D%3D&utm_source=qr" target="_blank" class="footer-link" id="footerInstaLink">Instagram</a>
+          <a href="https://wa.me/?text=Check%20out%20Alankar%20by%20Gayatri%20Jewellery!" target="_blank" class="footer-link" id="footerWALink">WhatsApp</a>
+          <a href="#" class="footer-link" onclick="openCart();return false">My Cart</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span class="footer-copy">© 2025 Alankar by Gayatri. All rights reserved.</span>
+        <button class="admin-trigger" onclick="triggerAdminHint()" title="Admin">⚙</button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Floating Cart Button -->
+  <button class="floating-cart" onclick="openCart()" title="View Cart">
+    🛒 <span class="cart-count">0</span>
+  </button>
+
+</div><!-- end #customerSection -->
+
+<!-- ==================== CART PANEL ==================== -->
+<div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
+<div class="cart-panel" id="cartPanel">
+  <div class="cart-header">
+    <h3>Your Cart</h3>
+    <button class="cart-close" onclick="closeCart()">✕</button>
+  </div>
+  <div class="cart-items" id="cartItemsWrap"></div>
+  <div class="cart-footer" id="cartFooter" style="display:none">
+    <div class="cart-subtotal">
+      <span>Total</span>
+      <span id="cartTotal">₹0</span>
+    </div>
+    <button class="btn-share-cart" onclick="shareCatalogLink()">🔗 Copy Shareable Link</button>
+    <button class="btn-wa-share" onclick="shareOnWhatsApp()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      Share on WhatsApp
+    </button>
+    <button class="btn-enquire" onclick="openOrderModal()">Enquire Now</button>
+  </div>
+</div>
+
+<!-- ==================== ADMIN SECTION ==================== -->
+<div id="adminSection">
+
+  <header class="admin-header">
+    <div class="a-brand">
+      <img id="adminLogo" src="" alt="">
+      <span>Admin Panel</span>
+    </div>
+    <div class="admin-nav">
+      <button class="admin-nav-btn active" onclick="showAdminTab('dashboard',this)">📊 Dashboard</button>
+      <button class="admin-nav-btn" onclick="showAdminTab('products',this)">📦 Products</button>
+      <button class="admin-nav-btn" onclick="showAdminTab('categories',this)">🏷️ Categories</button>
+      <button class="admin-nav-btn" onclick="showAdminSettings()">⚙️ Settings</button>
+    </div>
+    <div class="admin-actions">
+      <button id="adminThemeToggleBtn" class="btn-view-catalog" onclick="toggleTheme()">☀️ Light Mode</button>
+      <button class="btn-view-catalog" onclick="switchToCatalog()">👁 View Catalog</button>
+      <button class="btn-logout" onclick="adminLogout()">Logout</button>
+    </div>
+  </header>
+
+  <!-- Mobile admin nav -->
+  <div class="admin-mobile-nav">
+    <button class="admin-nav-btn active" onclick="showAdminTab('dashboard',this)">Dashboard</button>
+    <button class="admin-nav-btn" onclick="showAdminTab('products',this)">Products</button>
+    <button class="admin-nav-btn" onclick="showAdminTab('categories',this)">Categories</button>
+    <button class="admin-nav-btn" onclick="showAdminSettings()">Settings</button>
+    <button id="adminMobileThemeToggleBtn" class="admin-nav-btn" onclick="toggleTheme()">☀️ Light Mode</button>
+    <button class="admin-nav-btn" onclick="switchToCatalog()">View Catalog</button>
+    <button class="admin-nav-btn" style="color:#E57373" onclick="adminLogout()">Logout</button>
+  </div>
+
+  <div class="admin-body">
+
+    <!-- Dashboard Tab -->
+    <div class="admin-tab active" id="tab-dashboard">
+      <div class="dash-stats" id="dashStats"></div>
+      <div class="admin-section-title" style="margin-top:8px">Recent Products</div>
+      <div class="admin-table-wrap">
+        <table class="admin-table" id="recentProductsTable">
+          <thead><tr><th>Image</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th></tr></thead>
+          <tbody id="recentProductsTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Products Tab -->
+    <div class="admin-tab" id="tab-products">
+      <div class="admin-section-title">
+        All Products
+        <button class="btn-add" onclick="openProductModal()">+ Add Product</button>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table" id="productsTable">
+          <thead><tr><th>Image</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Featured</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="productsTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Categories Tab -->
+    <div class="admin-tab" id="tab-categories">
+      <div class="admin-section-title">Category Manager</div>
+      <div class="cat-manager">
+        <div class="cat-add-row">
+          <input type="text" id="newCatInput" placeholder="New category name..." onkeydown="if(event.key==='Enter')addCategory()">
+          <button class="btn-add" onclick="addCategory()">+ Add</button>
+        </div>
+        <div class="cat-list" id="catListAdmin"></div>
+      </div>
+    </div>
+
+  </div>
+</div><!-- end #adminSection -->
+
+<!-- ═══════════════════════════════════════════════ 
+     AGENTATION · localhost-only · design feedback toolbar 
+     Loaded via esm.sh; isolated React root. 
+     ═══════════════════════════════════════════════ -->
+<script type="module">
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    try {
+      const [{ default: React }, { createRoot }, { Agentation }] = await Promise.all([
+        import('https://esm.sh/react@18.3.1'),
+        import('https://esm.sh/react-dom@18.3.1/client'),
+        import('https://esm.sh/agentation@3?deps=react@18.3.1,react-dom@18.3.1'),
+      ]);
+      const mount = document.createElement('div');
+      mount.id = 'agentation-mount';
+      document.body.appendChild(mount);
+      createRoot(mount).render(React.createElement(Agentation));
+    } catch (e) {
+      console.warn('Agentation load failed:', e);
+    }
+  }
+</script>
+
+<script src="js/app.js"></script>
+</body>
+</html>
