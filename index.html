@@ -100,6 +100,7 @@
         <label class="form-label">Product Image</label>
         <div style="display:flex; flex-direction:column; gap:8px;">
           <input type="file" class="form-input" id="pImageFile" accept="image/*" onchange="previewImage()">
+          <span id="pImageUploadStatus" style="font-size:0.8rem;color:var(--gold);display:none;margin-top:-4px;">⏳ Uploading image to storage...</span>
           <input type="url" class="form-input" id="pImageUrl" placeholder="Or paste image URL (recommended)..." oninput="previewImageUrl()">
         </div>
         <input type="hidden" id="pImageData">
@@ -243,6 +244,7 @@
       <button class="admin-nav-btn active" onclick="showAdminTab('dashboard',this)">📊 Dashboard</button>
       <button class="admin-nav-btn" onclick="showAdminTab('products',this)">📦 Products</button>
       <button class="admin-nav-btn" onclick="showAdminTab('categories',this)">🏷️ Categories</button>
+      <button class="admin-nav-btn" onclick="showAdminTab('orders',this)">📝 Orders</button>
       <button class="admin-nav-btn" onclick="showAdminSettings()">⚙️ Settings</button>
     </div>
     <div class="admin-actions">
@@ -257,6 +259,7 @@
     <button class="admin-nav-btn active" onclick="showAdminTab('dashboard',this)">Dashboard</button>
     <button class="admin-nav-btn" onclick="showAdminTab('products',this)">Products</button>
     <button class="admin-nav-btn" onclick="showAdminTab('categories',this)">Categories</button>
+    <button class="admin-nav-btn" onclick="showAdminTab('orders',this)">Orders</button>
     <button class="admin-nav-btn" onclick="showAdminSettings()">Settings</button>
     <button id="adminMobileThemeToggleBtn" class="admin-nav-btn" onclick="toggleTheme()">☀️ Light Mode</button>
     <button class="admin-nav-btn" onclick="switchToCatalog()">View Catalog</button>
@@ -300,6 +303,30 @@
           <button class="btn-add" onclick="addCategory()">+ Add</button>
         </div>
         <div class="cat-list" id="catListAdmin"></div>
+      </div>
+    </div>
+
+    <!-- Orders Tab -->
+    <div class="admin-tab" id="tab-orders">
+      <div class="admin-section-title">Customer Enquiries & Orders</div>
+      <div class="admin-table-wrap">
+        <table class="admin-table" id="ordersTable">
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Date</th>
+              <th>Customer Name</th>
+              <th>Phone</th>
+              <th>Delivery Address</th>
+              <th>Items Ordered</th>
+              <th>Total</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="ordersTbody">
+            <tr><td colspan="8" style="text-align:center;color:var(--text-dim)">Loading enquiries...</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 

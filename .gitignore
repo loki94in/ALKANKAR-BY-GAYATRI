@@ -1,0 +1,13 @@
+# Local environment variables
+.env
+.env*.local
+
+# Node.js dependencies
+node_modules/
+
+# Local uploads
+images/uploads/
+
+# OS specific files
+.DS_Store
+Thumbs.db

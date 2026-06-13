@@ -27,6 +27,10 @@ try {
 const authHandler = require('./api/auth');
 const orderHandler = require('./api/order');
 const settingsHandler = require('./api/settings');
+const uploadHandler = require('./api/upload');
+const productsHandler = require('./api/products');
+const categoriesHandler = require('./api/categories');
+const cartsHandler = require('./api/carts');
 
 const MIME_TYPES = {
   '.html': 'text/html',
@@ -67,10 +71,18 @@ const server = http.createServer((req, res) => {
     // Routing for serverless API handlers
     if (cleanUrl === '/api/auth') {
       authHandler(req, res);
-    } else if (cleanUrl === '/api/order') {
+    } else if (cleanUrl === '/api/order' || cleanUrl === '/api/orders') {
       orderHandler(req, res);
+    } else if (cleanUrl === '/api/products') {
+      productsHandler(req, res);
+    } else if (cleanUrl === '/api/categories') {
+      categoriesHandler(req, res);
+    } else if (cleanUrl === '/api/carts') {
+      cartsHandler(req, res);
     } else if (cleanUrl === '/api/settings') {
       settingsHandler(req, res);
+    } else if (cleanUrl === '/api/upload') {
+      uploadHandler(req, res);
     } else {
       // Serve static frontend files
       let filePath = cleanUrl === '/' ? '/index.html' : cleanUrl;

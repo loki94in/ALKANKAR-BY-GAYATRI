@@ -21,16 +21,34 @@ const DEFAULT_PRODUCTS = [
   {id:8,name:'Ghungroo Anklets',category:'Anklets',price:750,origPrice:900,stock:10,desc:'Traditional payal with brass ghungroo bells.',image:'',visible:true,featured:false},
 ];
 
+let cachedProducts = [];
+let cachedCategories = [];
+
+function loadDataFromServer(callback) {
+  Promise.all([
+    fetch('/api/products').then(res => res.json()),
+    fetch('/api/categories').then(res => res.json())
+  ])
+  .then(([products, categories]) => {
+    cachedProducts = products;
+    cachedCategories = categories;
+    if (callback) callback();
+  })
+  .catch(err => {
+    console.error('Failed to load data from server, falling back to local defaults:', err);
+    cachedProducts = DEFAULT_PRODUCTS;
+    cachedCategories = DEFAULT_CATEGORIES;
+    if (callback) callback();
+  });
+}
+
 function getData(key, def){try{const v=localStorage.getItem(key);return v?JSON.parse(v):def;}catch(e){return def;}}
 function setData(key,val){localStorage.setItem(key,JSON.stringify(val));}
 
-function getProducts(){return getData('alg_products', DEFAULT_PRODUCTS);}
-function saveProducts(p){setData('alg_products',p);}
-function getCategories(){return getData('alg_categories', DEFAULT_CATEGORIES);}
-function saveCategories(c){setData('alg_categories',c);}
+function getProducts(){return cachedProducts;}
+function getCategories(){return cachedCategories;}
 function getCart(){return getData('alg_cart',[]);}
 function saveCart(c){setData('alg_cart',c);}
-function getNextId(){const p=getProducts();return p.length?Math.max(...p.map(x=>x.id))+1:1;}
 
 // ============================================================
 // LOGO INIT
@@ -192,12 +210,38 @@ function removeFromCart(pid){
 
 function shareCatalogLink(){
   const cart=getCart();
-  const products=getProducts();
-  const items=cart.map(c=>{const p=products.find(x=>x.id===c.id);return p?`${p.name} (x${c.qty||1})`:null}).filter(Boolean);
-  const encoded=btoa(JSON.stringify(cart));
-  const url=window.location.href.split('?')[0]+'?cart='+encoded;
-  navigator.clipboard.writeText(url).then(()=>showToast('Link copied to clipboard!','success')).catch(()=>{
-    prompt('Copy this link:',url);
+  if(!cart.length){
+    showToast('Your cart is empty', 'error');
+    return;
+  }
+  fetch('/api/carts', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(cart)
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (res.status === 'success') {
+      const url=window.location.href.split('?')[0]+'?cartId='+res.id;
+      navigator.clipboard.writeText(url).then(()=>showToast('Link copied to clipboard!','success')).catch(()=>{
+        const modal = document.createElement('div');
+        modal.style = "position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1000;display:flex;align-items:center;justify-content:center;";
+        modal.innerHTML = `<div style="background:var(--bg3);padding:24px;border:1px solid var(--border);border-radius:8px;max-width:400px;text-align:center;">
+          <h3 style="margin-bottom:12px;color:var(--gold);">Copy Shareable Link</h3>
+          <input type="text" value="${url}" readonly style="width:100%;padding:8px;margin-bottom:16px;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:4px;">
+          <button class="btn-save" onclick="this.parentElement.parentElement.remove()">Close</button>
+        </div>`;
+        document.body.appendChild(modal);
+      });
+    } else {
+      showToast('Failed to create shareable link', 'error');
+    }
+  })
+  .catch(err => {
+    console.error('Error sharing cart:', err);
+    showToast('Failed to create shareable link', 'error');
   });
 }
 
@@ -234,15 +278,19 @@ function enquireOnWhatsApp(){
 // ============================================================
 function checkSharedCart(){
   const params = new URLSearchParams(window.location.search);
-  const cartParam = params.get('cart');
-  if(cartParam){
-    try{
-      const decoded=JSON.parse(atob(cartParam));
-      saveCart(decoded);
-      updateCartCount();
-      document.getElementById('sharedBanner').classList.add('active');
-      setTimeout(()=>document.getElementById('sharedBanner').classList.remove('active'),5000);
-    }catch(e){}
+  const cartId = params.get('cartId');
+  if(cartId){
+    fetch(`/api/carts?id=${cartId}`)
+    .then(res => res.json())
+    .then(cartData => {
+      if (Array.isArray(cartData)) {
+        saveCart(cartData);
+        updateCartCount();
+        document.getElementById('sharedBanner').classList.add('active');
+        setTimeout(()=>document.getElementById('sharedBanner').classList.remove('active'),5000);
+      }
+    })
+    .catch(err => console.error('Failed to load shared cart:', err));
   }
 }
 
@@ -368,6 +416,7 @@ function switchToAdmin(){
   renderAdminDashboard();
   renderAdminProducts();
   renderAdminCategories();
+  renderAdminOrders();
 }
 function switchToCatalog(){
   document.getElementById('adminSection').classList.remove('active');
@@ -388,6 +437,7 @@ function showAdminTab(name,btn){
   if(name==='dashboard') renderAdminDashboard();
   if(name==='products') renderAdminProducts();
   if(name==='categories') renderAdminCategories();
+  if(name==='orders') renderAdminOrders();
 }
 
 // ============================================================
@@ -396,15 +446,33 @@ function showAdminTab(name,btn){
 function renderAdminDashboard(){
   const products=getProducts();
   const cats=getCategories();
-  const cart=getCart();
   const visible=products.filter(p=>p.visible).length;
-  const stats=[
+  
+  const initialStats = [
     {val:products.length,label:'Total Products'},
     {val:visible,label:'Active Listings'},
     {val:cats.length,label:'Categories'},
-    {val:cart.length,label:'Cart Items'},
+    {val:0,label:'Pending Enquiries'}
   ];
-  document.getElementById('dashStats').innerHTML=stats.map(s=>`<div class="stat-card"><div class="stat-val">${s.val}</div><div class="stat-label">${s.label}</div></div>`).join('');
+  document.getElementById('dashStats').innerHTML=initialStats.map(s=>`<div class="stat-card"><div class="stat-val">${s.val}</div><div class="stat-label">${s.label}</div></div>`).join('');
+
+  fetch('/api/orders', {
+    headers: { 'X-Admin-Token': 'authenticated' }
+  })
+  .then(res => res.json())
+  .then(orders => {
+    if (orders) {
+      const pendingOrders = orders.filter(o => o.status === 'Pending').length;
+      const stats = [
+        {val:products.length,label:'Total Products'},
+        {val:visible,label:'Active Listings'},
+        {val:cats.length,label:'Categories'},
+        {val:pendingOrders,label:'Pending Enquiries'}
+      ];
+      document.getElementById('dashStats').innerHTML=stats.map(s=>`<div class="stat-card"><div class="stat-val">${s.val}</div><div class="stat-label">${s.label}</div></div>`).join('');
+    }
+  })
+  .catch(err => console.error('Failed to load dashboard stats from server:', err));
   
   const recent=products.slice(-6).reverse();
   document.getElementById('recentProductsTbody').innerHTML=recent.map(p=>`
@@ -452,6 +520,8 @@ function openProductModal(pid){
   
   // Clear file inputs to prevent carryover
   document.getElementById('pImageFile').value='';
+  const statusEl = document.getElementById('pImageUploadStatus');
+  if (statusEl) statusEl.style.display = 'none';
   
   if(pid){
     const p=getProducts().find(x=>x.id===pid);
@@ -504,12 +574,61 @@ function previewImage(){
   // Clear the image URL field as we are doing a file upload
   document.getElementById('pImageUrl').value='';
   
+  const statusEl = document.getElementById('pImageUploadStatus');
+  const saveBtn = document.querySelector('#productModal .btn-save');
+  
+  if (statusEl) {
+    statusEl.textContent = '⏳ Uploading image to storage...';
+    statusEl.style.color = 'var(--gold)';
+    statusEl.style.display = 'block';
+  }
+  if (saveBtn) saveBtn.disabled = true;
+
   const reader=new FileReader();
   reader.onload=e=>{
     const data=e.target.result;
-    document.getElementById('pImageData').value=data;
-    const prev=document.getElementById('imgPreview');
-    prev.src=data;prev.style.display='block';
+    
+    fetch('/api/upload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        filename: file.name,
+        fileType: file.type,
+        base64: data
+      })
+    })
+    .then(res => res.json())
+    .then(res => {
+      if (res.status === 'success') {
+        document.getElementById('pImageData').value = res.url;
+        const prev = document.getElementById('imgPreview');
+        prev.src = res.url;
+        prev.style.display = 'block';
+        if (statusEl) {
+          statusEl.textContent = '✅ Uploaded successfully!';
+          statusEl.style.color = '#81C784';
+        }
+        showToast('Image uploaded successfully', 'success');
+      } else {
+        throw new Error(res.error || 'Upload failed');
+      }
+    })
+    .catch(err => {
+      console.error('Image upload failed:', err);
+      if (statusEl) {
+        statusEl.textContent = '❌ Upload failed: ' + err.message;
+        statusEl.style.color = '#E57373';
+      }
+      showToast('Upload failed: ' + err.message, 'error');
+      document.getElementById('pImageData').value = '';
+      document.getElementById('imgPreview').style.display = 'none';
+      document.getElementById('pImageFile').value = '';
+    })
+    .finally(() => {
+      if (saveBtn) saveBtn.disabled = false;
+    });
   };
   reader.readAsDataURL(file);
 }
@@ -518,6 +637,10 @@ function previewImageUrl(){
   const url=document.getElementById('pImageUrl').value.trim();
   document.getElementById('pImageData').value=url;
   const prev=document.getElementById('imgPreview');
+  
+  const statusEl = document.getElementById('pImageUploadStatus');
+  if (statusEl) statusEl.style.display = 'none';
+  
   if(url){
     prev.src=url;
     prev.style.display='block';
@@ -542,34 +665,89 @@ function saveProduct(){
   const image=document.getElementById('pImageData').value;
   const editId=document.getElementById('editProductId').value;
   
-  let products=getProducts();
-  if(editId){
-    const idx=products.findIndex(x=>x.id==editId);
-    if(idx>=0) products[idx]={...products[idx],name,category:cat,price,origPrice,stock,desc,visible,featured,image};
-    showToast('Product updated','success');
-  } else {
-    products.push({id:getNextId(),name,category:cat,price,origPrice,stock,desc,visible,featured,image});
-    showToast('Product added','success');
-  }
-  saveProducts(products);
-  closeProductModal();
-  renderAdminProducts();
-  renderAdminDashboard();
+  const body = {
+    id: editId ? parseInt(editId) : undefined,
+    name,
+    category: cat,
+    price,
+    origPrice,
+    stock,
+    desc,
+    visible,
+    featured,
+    image
+  };
+
+  fetch('/api/products', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Admin-Token': 'authenticated'
+    },
+    body: JSON.stringify(body)
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (res.status === 'success') {
+      showToast(editId ? 'Product updated' : 'Product added', 'success');
+      loadDataFromServer(() => {
+        closeProductModal();
+        renderAdminProducts();
+        renderAdminDashboard();
+      });
+    } else {
+      showToast(res.message || 'Error saving product', 'error');
+    }
+  })
+  .catch(err => {
+    console.error('Error saving product:', err);
+    showToast('Failed to save product', 'error');
+  });
 }
 
 function toggleVisibility(pid){
-  let products=getProducts();
-  const p=products.find(x=>x.id===pid);
-  if(p){p.visible=!p.visible;saveProducts(products);renderAdminProducts();renderAdminDashboard();showToast(p.visible?'Product visible in catalog':'Product hidden from catalog');}
+  const p = cachedProducts.find(x => x.id === pid);
+  if (!p) return;
+  
+  const updatedProduct = { ...p, visible: !p.visible };
+  fetch('/api/products', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Admin-Token': 'authenticated'
+    },
+    body: JSON.stringify(updatedProduct)
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (res.status === 'success') {
+      showToast(p.visible ? 'Product hidden' : 'Product visible');
+      loadDataFromServer(() => {
+        renderAdminProducts();
+        renderAdminDashboard();
+      });
+    }
+  });
 }
 
 function deleteProduct(pid){
   if(!confirm('Delete this product? This cannot be undone.')) return;
-  let products=getProducts().filter(x=>x.id!==pid);
-  saveProducts(products);
-  renderAdminProducts();
-  renderAdminDashboard();
-  showToast('Product deleted');
+  fetch(`/api/products?id=${pid}`, {
+    method: 'DELETE',
+    headers: {
+      'X-Admin-Token': 'authenticated'
+    }
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (res.status === 'success') {
+      showToast('Product deleted');
+      loadDataFromServer(() => {
+        renderAdminProducts();
+        renderAdminDashboard();
+      });
+    }
+  });
 }
 
 // ============================================================
@@ -588,25 +766,54 @@ function addCategory(){
   const inp=document.getElementById('newCatInput');
   const name=inp.value.trim();
   if(!name) return;
-  const cats=getCategories();
-  if(cats.includes(name)){showToast('Category already exists','error');return;}
-  cats.push(name);
-  saveCategories(cats);
-  inp.value='';
-  renderAdminCategories();
-  renderCategoryFilter();
-  showToast('Category added: '+name,'success');
+  
+  fetch('/api/categories', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Admin-Token': 'authenticated'
+    },
+    body: JSON.stringify({ name })
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (res.status === 'success') {
+      showToast('Category added: ' + name, 'success');
+      inp.value = '';
+      loadDataFromServer(() => {
+        renderAdminCategories();
+        renderCategoryFilter();
+      });
+    } else {
+      showToast(res.message || 'Error adding category', 'error');
+    }
+  })
+  .catch(err => {
+    console.error('Error adding category:', err);
+    showToast('Failed to add category', 'error');
+  });
 }
 
 function deleteCategory(idx){
-  let cats=getCategories();
-  const name=cats[idx];
+  const name = cachedCategories[idx];
   if(!confirm('Delete category "'+name+'"? Products in this category won\'t be deleted.')) return;
-  cats.splice(idx,1);
-  saveCategories(cats);
-  renderAdminCategories();
-  renderCategoryFilter();
-  showToast('Category removed');
+  
+  fetch(`/api/categories?name=${encodeURIComponent(name)}`, {
+    method: 'DELETE',
+    headers: {
+      'X-Admin-Token': 'authenticated'
+    }
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (res.status === 'success') {
+      showToast('Category removed');
+      loadDataFromServer(() => {
+        renderAdminCategories();
+        renderCategoryFilter();
+      });
+    }
+  });
 }
 
 // ============================================================
@@ -760,16 +967,105 @@ function updateThemeButtons() {
   });
 }
 
+function escapeHTML(str) {
+  if (!str) return '';
+  return str.toString()
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function renderAdminOrders() {
+  const tbody = document.getElementById('ordersTbody');
+  if (!tbody) return;
+  
+  fetch('/api/orders', {
+    headers: {
+      'X-Admin-Token': 'authenticated'
+    }
+  })
+  .then(res => res.json())
+  .then(orders => {
+    if (!orders || !orders.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">No orders or enquiries found.</td></tr>';
+      return;
+    }
+    
+    // Sort orders by date descending (newest first)
+    orders.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    let html = '';
+    orders.forEach(ord => {
+      const formattedDate = new Date(ord.date).toLocaleString('en-IN');
+      const statusOptions = ['Pending', 'Processing', 'Completed', 'Cancelled'].map(s => 
+        `<option value="${s}" ${ord.status === s ? 'selected' : ''}>${s}</option>`
+      ).join('');
+      
+      html += `<tr>
+        <td style="font-family:monospace;font-size:0.85rem;color:var(--gold);">${escapeHTML(ord.id)}</td>
+        <td style="font-size:0.85rem;color:var(--text-dim);">${escapeHTML(formattedDate)}</td>
+        <td style="font-weight:600;color:var(--cream);">${escapeHTML(ord.name)}</td>
+        <td><a href="tel:${escapeHTML(ord.phone)}" style="color:var(--gold);text-decoration:none;">${escapeHTML(ord.phone)}</a></td>
+        <td style="max-width:180px;white-space:normal;word-break:break-word;font-size:0.85rem;color:var(--text-dim);">${escapeHTML(ord.address)}</td>
+        <td style="max-width:200px;white-space:normal;word-break:break-word;font-size:0.85rem;">${escapeHTML(ord.items)}</td>
+        <td style="color:var(--gold);font-weight:600;">₹${(ord.total || 0).toLocaleString('en-IN')}</td>
+        <td>
+          <select class="form-select status-select" onchange="changeOrderStatus('${ord.id}', this.value)" style="padding:4px 8px;font-size:0.8rem;width:auto;">
+            ${statusOptions}
+          </select>
+        </td>
+      </tr>`;
+    });
+    tbody.innerHTML = html;
+  })
+  .catch(err => {
+    console.error('Error fetching orders:', err);
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#E57373">Error loading orders. Check server console.</td></tr>';
+  });
+}
+
+function changeOrderStatus(orderId, newStatus) {
+  fetch('/api/orders', {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Admin-Token': 'authenticated'
+    },
+    body: JSON.stringify({ id: orderId, status: newStatus })
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (res.status === 'success') {
+      showToast(`Order status updated to: ${newStatus}`, 'success');
+      renderAdminOrders();
+      renderAdminDashboard(); // Refresh counts
+    } else {
+      showToast(res.message || 'Failed to update order status', 'error');
+    }
+  })
+  .catch(err => {
+    console.error('Error updating order status:', err);
+    showToast('Failed to update status', 'error');
+  });
+}
+
 // ============================================================
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded',()=>{
   initTheme();
   initLogos();
-  checkSharedCart();
-  renderCategoryFilter();
-  renderProducts();
-  updateCartCount();
+  
+  loadDataFromServer(() => {
+    checkSharedCart();
+    renderCategoryFilter();
+    renderProducts();
+    updateCartCount();
+    
+    if(sessionStorage.getItem('alg_admin')==='1') switchToAdmin();
+  });
   
   // Fetch configurations from backend
   fetch('/api/settings')
@@ -782,6 +1078,4 @@ document.addEventListener('DOMContentLoaded',()=>{
       console.error('Failed to load settings from server:', err);
       updateSocialLinks();
     });
-    
-  if(sessionStorage.getItem('alg_admin')==='1') switchToAdmin();
 });

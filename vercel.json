@@ -1,3 +1,11 @@
 {
-  "cleanUrls": true
+  "cleanUrls": true,
+  "functions": {
+    "api/*.js": {
+      "includeFiles": "data/**"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/orders", "destination": "/api/order" }
+  ]
 }
