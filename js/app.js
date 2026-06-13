@@ -49,6 +49,28 @@ function getProducts(){return cachedProducts;}
 function getCategories(){return cachedCategories;}
 function getCart(){return getData('alg_cart',[]);}
 function saveCart(c){setData('alg_cart',c);}
+function getFavorites(){return getData('alg_favorites',[]);}
+function saveFavorites(f){setData('alg_favorites',f);}
+function toggleFavorite(pid){
+  let favorites = getFavorites();
+  const products = getProducts();
+  const p = products.find(x => x.id === pid);
+  if(!p) return;
+  
+  const idx = favorites.indexOf(pid);
+  if(idx >= 0){
+    favorites.splice(idx, 1);
+    saveFavorites(favorites);
+    showToast('Removed from favorites: ' + p.name, 'success');
+  } else {
+    favorites.push(pid);
+    saveFavorites(favorites);
+    showToast('Added to favorites: ' + p.name, 'success');
+  }
+  
+  renderCategoryFilter();
+  renderProducts();
+}
 
 // ============================================================
 // LOGO INIT
@@ -68,9 +90,12 @@ let currentCat = 'All';
 
 function renderCategoryFilter(){
   const cats = getCategories();
-  const all = ['All',...cats];
+  const all = ['All','Favorites',...cats];
   const wrap = document.getElementById('catFilter');
-  wrap.innerHTML = all.map(c=>`<button class="cat-btn${c===currentCat?' active':''}" onclick="filterCat('${c}')">${c}</button>`).join('');
+  wrap.innerHTML = all.map(c=>{
+    const label = c==='Favorites'?'Favorites ♡':c;
+    return `<button class="cat-btn${c===currentCat?' active':''}" onclick="filterCat('${c}')">${label}</button>`;
+  }).join('');
 }
 
 function filterCat(cat){
@@ -81,20 +106,47 @@ function filterCat(cat){
 
 function renderProducts(){
   const products = getProducts();
+  const searchInput = document.getElementById('searchInput');
+  const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+  const favorites = getFavorites();
+
   const filtered = products.filter(p=>{
     if(!p.visible) return false;
-    if(currentCat==='All') return true;
-    return p.category === currentCat;
+    
+    // Category / Favorites check
+    if(currentCat==='Favorites'){
+      if(!favorites.includes(p.id)) return false;
+    } else if(currentCat!=='All' && p.category !== currentCat){
+      return false;
+    }
+    
+    // Search query check
+    if(query){
+      const nameMatch = p.name.toLowerCase().includes(query);
+      const descMatch = (p.desc || '').toLowerCase().includes(query);
+      const catMatch = p.category.toLowerCase().includes(query);
+      if(!nameMatch && !descMatch && !catMatch) return false;
+    }
+    
+    return true;
   });
+
   const grid = document.getElementById('productGrid');
-  document.getElementById('catalogHeading').textContent = currentCat==='All'?'All Jewellery':currentCat;
+  let heading = currentCat==='All'?'All Jewellery':(currentCat==='Favorites'?'My Favorites':currentCat);
+  if(query) heading += ` (Search: "${query}")`;
+  
+  document.getElementById('catalogHeading').textContent = heading;
   document.getElementById('productCount').textContent = filtered.length + ' piece'+(filtered.length!==1?'s':'');
 
   if(!filtered.length){
-    grid.innerHTML = '<div class="no-products" style="grid-column:1/-1">✦ No pieces in this collection yet ✦</div>';
+    grid.innerHTML = '<div class="no-products" style="grid-column:1/-1">✦ No pieces found ✦</div>';
     return;
   }
   grid.innerHTML = filtered.map(p=>productCard(p)).join('');
+}
+
+function searchProducts(){
+  renderProducts();
 }
 
 const EMOJI_MAP = {'Necklaces':'📿','Earrings':'💎','Bangles':'⭕','Rings':'💍','Bridal':'👑','Hair Accessories':'✨','Anklets':'🌸'};
@@ -104,6 +156,12 @@ function productCard(p){
     : `<div class="product-img-placeholder">${EMOJI_MAP[p.category]||'✦'}</div>`;
   const badge = p.featured ? `<div class="product-badge">New</div>` : '';
   const origPrice = p.origPrice ? `<span class="original">₹${p.origPrice.toLocaleString('en-IN')}</span>` : '';
+  
+  const isFav = getFavorites().includes(p.id);
+  const wishClass = isFav ? 'active' : '';
+  const wishIcon = isFav ? '♥' : '♡';
+  const wishTitle = isFav ? 'Remove from Favorites' : 'Add to Favorites';
+
   return `<div class="product-card">
     <div class="product-img-wrap">${img}${badge}</div>
     <div class="product-body">
@@ -113,7 +171,7 @@ function productCard(p){
     </div>
     <div class="product-actions">
       <button class="btn-cart" onclick="addToCart(${p.id})">Add to Cart</button>
-      <button class="btn-wish" onclick="addToCart(${p.id})" title="Add">♡</button>
+      <button class="btn-wish ${wishClass}" onclick="toggleFavorite(${p.id})" title="${wishTitle}">${wishIcon}</button>
     </div>
   </div>`;
 }
@@ -247,30 +305,102 @@ function shareCatalogLink(){
 
 function shareOnWhatsApp(){
   const cart=getCart();
+  if(!cart.length){
+    showToast('Your cart is empty', 'error');
+    return;
+  }
   const products=getProducts();
   let msg='✨ *Alankar by Gayatri* — My Wishlist\n\n';
   let total=0;
   cart.forEach(c=>{
     const p=products.find(x=>x.id===c.id);
-    if(p){msg+=`• ${p.name} (${p.category}) — ₹${p.price.toLocaleString('en-IN')} x${c.qty||1}\n`;total+=p.price*(c.qty||1);}
+    if(p){
+      msg+=`• ${p.name} — ₹${p.price.toLocaleString('en-IN')} x${c.qty||1}\n`;
+      total+=p.price*(c.qty||1);
+    }
   });
-  msg+=`\n*Total: ₹${total.toLocaleString('en-IN')}*\n\n📸 instagram.com/${getInstagramHandle()}`;
-  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+  msg+=`\n*Total: ₹${total.toLocaleString('en-IN')}*\n\n`;
+  
+  showToast('Generating shareable cart link...', 'info');
+  
+  fetch('/api/carts', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(cart)
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (res.status === 'success') {
+      const url = window.location.origin + window.location.pathname + '?cartId=' + res.id;
+      msg += `🔗 View and edit this cart: ${url}\n\n`;
+      msg += `📸 instagram.com/${getInstagramHandle()}`;
+      const wa = getWhatsAppNumber().replace(/\D/g, '');
+      const waUrl = wa ? `https://wa.me/${wa}?text=` : 'https://wa.me/?text=';
+      window.open(waUrl + encodeURIComponent(msg), '_blank');
+      showToast('Redirected to WhatsApp!', 'success');
+    } else {
+      throw new Error('API failure');
+    }
+  })
+  .catch(err => {
+    console.error('Error sharing cart on WhatsApp:', err);
+    msg += `📸 instagram.com/${getInstagramHandle()}`;
+    const wa = getWhatsAppNumber().replace(/\D/g, '');
+    const waUrl = wa ? `https://wa.me/${wa}?text=` : 'https://wa.me/?text=';
+    window.open(waUrl + encodeURIComponent(msg), '_blank');
+  });
 }
 
 function enquireOnWhatsApp(){
   const cart=getCart();
+  if(!cart.length){
+    showToast('Your cart is empty', 'error');
+    return;
+  }
   const products=getProducts();
   let msg='🙏 Namaste! I am interested in the following pieces from Alankar by Gayatri:\n\n';
   let total=0;
   cart.forEach(c=>{
     const p=products.find(x=>x.id===c.id);
-    if(p){msg+=`• ${p.name} — ₹${p.price.toLocaleString('en-IN')} (Qty: ${c.qty||1})\n`;total+=p.price*(c.qty||1);}
+    if(p){
+      msg+=`• ${p.name} — ₹${p.price.toLocaleString('en-IN')} (Qty: ${c.qty||1})\n`;
+      total+=p.price*(c.qty||1);
+    }
   });
-  msg+=`\n*Approx Total: ₹${total.toLocaleString('en-IN')}*\n\nKindly share availability & payment details. Thank you!`;
-  const wa = getWhatsAppNumber().replace(/\D/g, '');
-  const waUrl = wa ? `https://wa.me/${wa}?text=` : 'https://wa.me/?text=';
-  window.open(waUrl+encodeURIComponent(msg),'_blank');
+  msg+=`\n*Approx Total: ₹${total.toLocaleString('en-IN')}*\n\n`;
+  
+  showToast('Generating shareable cart link...', 'info');
+  
+  fetch('/api/carts', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(cart)
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (res.status === 'success') {
+      const url = window.location.origin + window.location.pathname + '?cartId=' + res.id;
+      msg += `🔗 View details here: ${url}\n\n`;
+      msg += `Kindly share availability & payment details. Thank you!`;
+      const wa = getWhatsAppNumber().replace(/\D/g, '');
+      const waUrl = wa ? `https://wa.me/${wa}?text=` : 'https://wa.me/?text=';
+      window.open(waUrl + encodeURIComponent(msg), '_blank');
+      showToast('Redirected to WhatsApp!', 'success');
+    } else {
+      throw new Error('API failure');
+    }
+  })
+  .catch(err => {
+    console.error('Error sharing enquiry on WhatsApp:', err);
+    msg += `Kindly share availability & payment details. Thank you!`;
+    const wa = getWhatsAppNumber().replace(/\D/g, '');
+    const waUrl = wa ? `https://wa.me/${wa}?text=` : 'https://wa.me/?text=';
+    window.open(waUrl + encodeURIComponent(msg), '_blank');
+  });
 }
 
 // ============================================================

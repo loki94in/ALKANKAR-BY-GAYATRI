@@ -481,3 +481,74 @@ body.light-theme .admin-trigger {
 body.light-theme .admin-trigger:hover {
   background: rgba(166, 125, 30, 0.08);
 }
+
+/* ===================== CATALOG SEARCH BOX ===================== */
+.search-box {
+  position: relative;
+  max-width: 320px;
+  width: 100%;
+}
+.search-box input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 8px 16px 8px 36px;
+  color: var(--text);
+  font-size: 0.85rem;
+  outline: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.search-box input:focus {
+  border-color: var(--gold-dim);
+  background: rgba(201, 168, 68, 0.05);
+  box-shadow: 0 0 10px rgba(201, 168, 68, 0.1);
+}
+.search-box .search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.85rem;
+  opacity: 0.6;
+  pointer-events: none;
+}
+body.light-theme .search-box input {
+  background: #FFFFFF;
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+}
+body.light-theme .search-box input:focus {
+  border-color: var(--gold);
+  background: rgba(166, 125, 30, 0.03);
+}
+
+/* ===================== FAVORITES / WISHLIST ACTIVE STATE ===================== */
+.btn-wish {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-wish:active {
+  transform: scale(0.9);
+}
+.btn-wish.active {
+  background: rgba(201, 168, 68, 0.12);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+body.light-theme .btn-wish.active {
+  background: rgba(166, 125, 30, 0.12);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* ===================== MOBILE SEARCH BAR RESPONSIVENESS ===================== */
+@media(max-width:640px) {
+  .section-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .search-box {
+    max-width: 100%;
+  }
+}
