@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Jewellery Catalog website with Google Sheets order database",
   "scripts": {
-    "dev": "node server.js"
+    "dev": "node local-server.js"
   },
   "private": true
 }
