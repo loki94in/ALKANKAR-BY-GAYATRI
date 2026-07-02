@@ -429,9 +429,7 @@ function checkSharedCart(){
 // ============================================================
 
 function triggerAdminHint(){
-  sessionStorage.setItem('alg_admin','1');
-  switchToAdmin();
-  showToast('Logged in as administrator (Testing Mode)', 'success');
+  showAdminLogin();
 }
 function showAdminLogin(){
   document.getElementById('adminLoginModal').classList.add('active');
@@ -502,28 +500,83 @@ function updateSocialLinks(){
 }
 
 // UI for changing credentials and settings (Server-Side Env Managed)
-function showAdminSettings(){
+async function showAdminSettings(){
+  let currentSettings = { admin_user: '', admin_pass: '', instagram_handle: '', whatsapp_number: '' };
+  try {
+    const res = await fetch('/api/settings');
+    if (res.ok) {
+      currentSettings = await res.json();
+    }
+  } catch(e) {}
+
   const html=`<div class="modal-box"><div class="modal-head"><h3>Admin Environment Configuration</h3><button class="modal-close" onclick="closeAdminSettings()">✕</button></div>`+
     `<div class="modal-body" style="line-height: 1.6;">`+
     `<div style="background:var(--crimson-dark);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;font-size:0.85rem;color:var(--text-dim);">`+
       `<strong style="color:var(--gold);display:block;margin-bottom:6px;">🔒 Server-Side Security Active</strong>`+
-      `All administrative credentials and API keys are now securely managed on the backend of the website. To update these values, configure the following environment variables in your hosting environment (e.g. Vercel) or your local <code>.env</code> file:`+
+      `Update your settings and credentials below. They are saved securely on the server.`+
     `</div>`+
-    `<ul style="list-style:none;padding-left:0;font-size:0.85rem;color:var(--text);display:flex;flex-direction:column;gap:10px;">`+
-      `<li><strong>ADMIN_USER</strong>: Admin username</li>`+
-      `<li><strong>ADMIN_PASS</strong>: Admin login password</li>`+
-      `<li><strong>GOOGLE_SHEET_URL</strong>: Google Sheets Apps Script URL</li>`+
-      `<li><strong>INSTAGRAM_HANDLE</strong>: Instagram handle</li>`+
-      `<li><strong>WHATSAPP_NUMBER</strong>: WhatsApp number</li>`+
-    `</ul>`+
+    `<div class="form-group">`+
+      `<label>Admin Username</label>`+
+      `<input type="text" id="set_admin_user" class="form-input" placeholder="Current username">`+
     `</div>`+
-    `<div class="modal-footer"><button class="btn-save" onclick="closeAdminSettings()">Close</button></div></div>`;
+    `<div class="form-group">`+
+      `<label>Admin Password</label>`+
+      `<input type="password" id="set_admin_pass" class="form-input" placeholder="Leave blank to keep current">`+
+    `</div>`+
+    `<div class="form-group">`+
+      `<label>Instagram Handle</label>`+
+      `<input type="text" id="set_instagram_handle" class="form-input" value="${currentSettings.instagram_handle || ''}">`+
+    `</div>`+
+    `<div class="form-group">`+
+      `<label>WhatsApp Number</label>`+
+      `<input type="text" id="set_whatsapp_number" class="form-input" value="${currentSettings.whatsapp_number || ''}">`+
+    `</div>`+
+    `</div>`+
+    `<div class="modal-footer">`+
+      `<button class="btn-save" onclick="saveAdminSettings()">Save Changes</button>`+
+    `</div></div>`;
   const overlay=document.createElement('div');
   overlay.id='adminSettingsOverlay';
   overlay.style.position='fixed';overlay.style.inset='0';overlay.style.background='rgba(0,0,0,0.7)';overlay.style.zIndex='600';
   overlay.innerHTML=`<div class="admin-settings-modal" style="position:relative;max-width:500px;margin:100px auto;background:var(--bg3);padding:20px;border:1px solid var(--border);border-radius:8px">${html}</div>`;
   document.body.appendChild(overlay);
 }
+
+async function saveAdminSettings(){
+  const admin_user = document.getElementById('set_admin_user').value.trim();
+  const admin_pass = document.getElementById('set_admin_pass').value.trim();
+  const instagram_handle = document.getElementById('set_instagram_handle').value.trim();
+  const whatsapp_number = document.getElementById('set_whatsapp_number').value.trim();
+  
+  const payload = {};
+  if(admin_user) payload.admin_user = admin_user;
+  if(admin_pass) payload.admin_pass = admin_pass;
+  payload.instagram_handle = instagram_handle;
+  payload.whatsapp_number = whatsapp_number;
+
+  try {
+    const res = await fetch('/api/settings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-token': sessionStorage.getItem('alg_admin') || ''
+      },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      showToast('Settings saved successfully');
+      closeAdminSettings();
+      // Reload settings
+      fetchSettings();
+    } else {
+      const data = await res.json();
+      showToast(data.message || 'Error saving settings', true);
+    }
+  } catch(e) {
+    showToast('Error saving settings', true);
+  }
+}
+
 function closeAdminSettings(){
   const el=document.getElementById('adminSettingsOverlay');
   if(el) el.remove();

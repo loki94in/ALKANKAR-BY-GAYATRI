@@ -7,9 +7,9 @@
     "origPrice": 4500,
     "stock": 8,
     "desc": "Exquisite kundan work on a traditional choker with matching earrings.",
-    "image": "",
     "visible": true,
-    "featured": true
+    "featured": true,
+    "image": "/images/img_1782973356996_437548920.jpeg"
   },
   {
     "id": 2,
@@ -31,9 +31,9 @@
     "origPrice": 3200,
     "stock": 5,
     "desc": "Gold-finish bridal bangles set of 12, perfect for ceremonies.",
-    "image": "",
-    "visible": true,
-    "featured": true
+    "visible": false,
+    "featured": true,
+    "image": ""
   },
   {
     "id": 4,
