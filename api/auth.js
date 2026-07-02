@@ -1,6 +1,6 @@
 const db = require('./db');
 
-module.exports = (req, res) => {
+module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -13,7 +13,7 @@ module.exports = (req, res) => {
     whatsapp_number: process.env.WHATSAPP_NUMBER || ''
   };
 
-  const settings = db.readData('settings.json', defaultSettings);
+  const settings = await db.readData('settings.json', defaultSettings);
   const adminUser = settings.admin_user;
   const adminPass = settings.admin_pass;
 

@@ -10,7 +10,7 @@ module.exports = async (req, res) => {
   const method = req.method;
 
   if (method === 'GET') {
-    const categories = db.readData('categories.json', DEFAULT_CATEGORIES);
+    const categories = await db.readData('categories.json', DEFAULT_CATEGORIES);
     return res.status(200).json(categories);
   }
 
@@ -24,13 +24,13 @@ module.exports = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Category name is required' });
     }
 
-    const categories = db.readData('categories.json', DEFAULT_CATEGORIES);
+    const categories = await db.readData('categories.json', DEFAULT_CATEGORIES);
     if (categories.includes(name)) {
       return res.status(400).json({ status: 'error', message: 'Category already exists' });
     }
 
     categories.push(name);
-    db.writeData('categories.json', categories);
+    await db.writeData('categories.json', categories);
     return res.status(200).json({ status: 'success', message: 'Category added' });
   }
 
@@ -46,9 +46,9 @@ module.exports = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Category name is required' });
     }
 
-    let categories = db.readData('categories.json', DEFAULT_CATEGORIES);
+    let categories = await db.readData('categories.json', DEFAULT_CATEGORIES);
     categories = categories.filter(x => x !== name);
-    db.writeData('categories.json', categories);
+    await db.writeData('categories.json', categories);
     return res.status(200).json({ status: 'success', message: 'Category deleted' });
   }
 

@@ -5,7 +5,7 @@ const DEFAULT_PRODUCTS = [
   {id:2,name:'Meenakari Jhumkas',category:'Earrings',price:1250,origPrice:null,stock:15,desc:'Vibrant meenakari jhumka earrings with intricate enamel detailing.',image:'',visible:true,featured:false},
   {id:3,name:'Bridal Bangles Set',category:'Bangles',price:2800,origPrice:3200,stock:5,desc:'Gold-finish bridal bangles set of 12, perfect for ceremonies.',image:'',visible:true,featured:true},
   {id:4,name:'Temple Necklace',category:'Necklaces',price:5500,origPrice:null,stock:4,desc:'South Indian temple jewellery necklace with antique gold finish.',image:'',visible:true,featured:false},
-  {id:5,name:'Maang Tikka',category:'Hair Accessories',price:980,origPrice:1200,stock:12,desc:'Elegant maang tikkka with pearl and stone work.',image:'',visible:true,featured:false},
+  {id:5,name:'Maang Tikka',category:'Hair Accessories',price:980,origPrice:1200,stock:12,desc:'Elegant maang tikka with pearl and stone work.',image:'',visible:true,featured:false},
   {id:6,name:'Oxidised Haath Phool',category:'Bridal',price:1600,origPrice:null,stock:7,desc:'Oxidised silver finish haath phool with floral motifs.',image:'',visible:true,featured:false},
   {id:7,name:'Stone Rings Set',category:'Rings',price:650,origPrice:null,stock:20,desc:'Set of 3 stone-studded rings with adjustable bands.',image:'',visible:true,featured:false},
   {id:8,name:'Ghungroo Anklets',category:'Anklets',price:750,origPrice:900,stock:10,desc:'Traditional payal with brass ghungroo bells.',image:'',visible:true,featured:false},
@@ -19,7 +19,7 @@ module.exports = async (req, res) => {
   const method = req.method;
 
   if (method === 'GET') {
-    const products = db.readData('products.json', DEFAULT_PRODUCTS);
+    const products = await db.readData('products.json', DEFAULT_PRODUCTS);
     return res.status(200).json(products);
   }
 
@@ -29,8 +29,7 @@ module.exports = async (req, res) => {
     }
 
     const { id, name, category, price, origPrice, stock, desc, visible, featured, image } = req.body;
-
-    const products = db.readData('products.json', DEFAULT_PRODUCTS);
+    const products = await db.readData('products.json', DEFAULT_PRODUCTS);
 
     if (id !== undefined && id !== null) {
       // Edit mode
@@ -48,7 +47,7 @@ module.exports = async (req, res) => {
           featured: featured === true,
           image: image || ''
         };
-        db.writeData('products.json', products);
+        await db.writeData('products.json', products);
         return res.status(200).json({ status: 'success', message: 'Product updated' });
       } else {
         return res.status(404).json({ status: 'error', message: 'Product not found' });
@@ -56,7 +55,7 @@ module.exports = async (req, res) => {
     } else {
       // Add mode
       const newId = products.length ? Math.max(...products.map(x => x.id)) + 1 : 1;
-      const newProduct = {
+      products.push({
         id: newId,
         name,
         category,
@@ -67,9 +66,8 @@ module.exports = async (req, res) => {
         visible: visible !== false,
         featured: featured === true,
         image: image || ''
-      };
-      products.push(newProduct);
-      db.writeData('products.json', products);
+      });
+      await db.writeData('products.json', products);
       return res.status(200).json({ status: 'success', message: 'Product added' });
     }
   }
@@ -86,9 +84,9 @@ module.exports = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Invalid product ID' });
     }
 
-    let products = db.readData('products.json', DEFAULT_PRODUCTS);
+    let products = await db.readData('products.json', DEFAULT_PRODUCTS);
     products = products.filter(x => x.id !== pid);
-    db.writeData('products.json', products);
+    await db.writeData('products.json', products);
     return res.status(200).json({ status: 'success', message: 'Product deleted' });
   }
 

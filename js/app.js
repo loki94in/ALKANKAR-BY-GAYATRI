@@ -515,20 +515,20 @@ async function showAdminSettings(){
       `<strong style="color:var(--gold);display:block;margin-bottom:6px;">🔒 Server-Side Security Active</strong>`+
       `Update your settings and credentials below. They are saved securely on the server.`+
     `</div>`+
-    `<div class="form-group">`+
-      `<label>Admin Username</label>`+
+    `<div class="form-row">`+
+      `<label class="form-label">Admin Username</label>`+
       `<input type="text" id="set_admin_user" class="form-input" placeholder="Current username">`+
     `</div>`+
-    `<div class="form-group">`+
-      `<label>Admin Password</label>`+
+    `<div class="form-row">`+
+      `<label class="form-label">Admin Password</label>`+
       `<input type="password" id="set_admin_pass" class="form-input" placeholder="Leave blank to keep current">`+
     `</div>`+
-    `<div class="form-group">`+
-      `<label>Instagram Handle</label>`+
+    `<div class="form-row">`+
+      `<label class="form-label">Instagram Handle</label>`+
       `<input type="text" id="set_instagram_handle" class="form-input" value="${currentSettings.instagram_handle || ''}">`+
     `</div>`+
-    `<div class="form-group">`+
-      `<label>WhatsApp Number</label>`+
+    `<div class="form-row">`+
+      `<label class="form-label">WhatsApp Number</label>`+
       `<input type="text" id="set_whatsapp_number" class="form-input" value="${currentSettings.whatsapp_number || ''}">`+
     `</div>`+
     `</div>`+

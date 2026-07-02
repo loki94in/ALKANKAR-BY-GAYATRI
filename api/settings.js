@@ -4,7 +4,7 @@ function isAdmin(req) {
   return req.headers['x-admin-token'] === 'authenticated';
 }
 
-module.exports = (req, res) => {
+module.exports = async (req, res) => {
   const method = req.method;
   const defaultSettings = {
     admin_user: process.env.ADMIN_USER || 'manhattan',
@@ -14,8 +14,8 @@ module.exports = (req, res) => {
   };
 
   if (method === 'GET') {
-    const settings = db.readData('settings.json', defaultSettings);
-    // Don't expose credentials on GET
+    const settings = await db.readData('settings.json', defaultSettings);
+    // Never expose credentials on GET
     return res.status(200).json({
       instagram_handle: settings.instagram_handle,
       whatsapp_number: settings.whatsapp_number
@@ -27,14 +27,13 @@ module.exports = (req, res) => {
       return res.status(403).json({ status: 'error', message: 'Forbidden' });
     }
 
-    let settings = db.readData('settings.json', defaultSettings);
-    
+    let settings = await db.readData('settings.json', defaultSettings);
     if (req.body.admin_user) settings.admin_user = req.body.admin_user;
     if (req.body.admin_pass) settings.admin_pass = req.body.admin_pass;
     if (req.body.instagram_handle !== undefined) settings.instagram_handle = req.body.instagram_handle;
     if (req.body.whatsapp_number !== undefined) settings.whatsapp_number = req.body.whatsapp_number;
 
-    db.writeData('settings.json', settings);
+    await db.writeData('settings.json', settings);
     return res.status(200).json({ status: 'success', message: 'Settings updated' });
   }
 

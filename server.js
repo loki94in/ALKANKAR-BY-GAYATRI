@@ -104,6 +104,7 @@ const server = http.createServer((req, res) => {
 });
 
 const PORT = 60263;
-server.listen(PORT, () => {
-  console.log(`Local development server running at http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Local development server running at http://0.0.0.0:${PORT} (LAN accessible)`);
+  console.log(`To access from mobile, use your computer's IP address: http://<your-ip-address>:${PORT}`);
 });

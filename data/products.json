@@ -1,17 +1,5 @@
 [
   {
-    "id": 1,
-    "name": "Kundan Choker Set",
-    "category": "Necklaces",
-    "price": 3800,
-    "origPrice": 4500,
-    "stock": 8,
-    "desc": "Exquisite kundan work on a traditional choker with matching earrings.",
-    "visible": true,
-    "featured": true,
-    "image": "/images/img_1782973356996_437548920.jpeg"
-  },
-  {
     "id": 2,
     "name": "Meenakari Jhumkas",
     "category": "Earrings",
