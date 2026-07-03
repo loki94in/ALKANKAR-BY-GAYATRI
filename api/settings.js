@@ -14,6 +14,7 @@ module.exports = async (req, res) => {
   };
 
   if (method === 'GET') {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     const settings = await db.readData('settings.json', defaultSettings);
     // Never expose credentials on GET
     return res.status(200).json({

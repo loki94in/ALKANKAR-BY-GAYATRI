@@ -8,11 +8,6 @@ const JSONBIN_BIN_ID = process.env.JSONBIN_BIN_ID;
 
 const isCloud = !!(JSONBIN_API_KEY && JSONBIN_BIN_ID);
 
-// ─── In-memory cache to avoid hammering JSONBin on every request ────────────
-let _cache = null;
-let _cacheTs = 0;
-const CACHE_TTL_MS = 5000; // 5 seconds
-
 // ─── LOCAL FILE HELPERS (development only) ───────────────────────────────────
 function ensureDataDir() {
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
@@ -57,16 +52,13 @@ function httpsRequest(options, body) {
 }
 
 async function fetchBin() {
-  if (_cache && Date.now() - _cacheTs < CACHE_TTL_MS) return _cache;
   const result = await httpsRequest({
     hostname: 'api.jsonbin.io',
     path: `/v3/b/${JSONBIN_BIN_ID}/latest`,
     method: 'GET',
     headers: { 'X-Master-Key': JSONBIN_API_KEY }
   });
-  _cache = result.record || {};
-  _cacheTs = Date.now();
-  return _cache;
+  return result.record || {};
 }
 
 async function updateBin(record) {
@@ -81,9 +73,6 @@ async function updateBin(record) {
       'Content-Length': Buffer.byteLength(body)
     }
   }, body);
-  // Invalidate cache after write
-  _cache = record;
-  _cacheTs = Date.now();
 }
 
 // ─── PUBLIC API ───────────────────────────────────────────────────────────────
@@ -111,3 +100,4 @@ async function writeData(filename, data) {
 }
 
 module.exports = { readData, writeData, isCloud };
+

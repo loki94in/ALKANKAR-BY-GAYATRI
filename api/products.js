@@ -19,6 +19,7 @@ module.exports = async (req, res) => {
   const method = req.method;
 
   if (method === 'GET') {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     const products = await db.readData('products.json', DEFAULT_PRODUCTS);
     return res.status(200).json(products);
   }

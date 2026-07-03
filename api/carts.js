@@ -19,6 +19,7 @@ module.exports = async (req, res) => {
   }
 
   if (method === 'GET') {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     const urlParams = new URLSearchParams(req.url.split('?')[1]);
     const cartId = urlParams.get('id');
 

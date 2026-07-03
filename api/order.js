@@ -13,6 +13,7 @@ module.exports = async (req, res) => {
   }
 
   if (method === 'GET') {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     const orders = await db.readData('orders.json', []);
     return res.status(200).json(orders);
   }
