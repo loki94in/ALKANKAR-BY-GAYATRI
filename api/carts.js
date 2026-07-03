@@ -10,10 +10,10 @@ module.exports = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Invalid cart data' });
     }
 
-    const carts = db.readData('carts.json', {});
+    const carts = await db.readData('carts.json', {});
     const cartId = 'cart_' + crypto.randomBytes(8).toString('hex');
     carts[cartId] = cartItems;
-    db.writeData('carts.json', carts);
+    await db.writeData('carts.json', carts);
 
     return res.status(200).json({ status: 'success', id: cartId });
   }
@@ -26,7 +26,7 @@ module.exports = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Cart ID is required' });
     }
 
-    const carts = db.readData('carts.json', {});
+    const carts = await db.readData('carts.json', {});
     const cartData = carts[cartId];
 
     if (cartData) {
@@ -38,3 +38,4 @@ module.exports = async (req, res) => {
 
   return res.status(405).json({ error: 'Method not allowed' });
 };
+

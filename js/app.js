@@ -181,10 +181,10 @@ function productCard(p){
 // ============================================================
 function addToCart(pid){
   const products = getProducts();
-  const p = products.find(x=>x.id===pid);
+  const p = products.find(x=>x.id==pid);
   if(!p) return;
   let cart = getCart();
-  const existing = cart.find(x=>x.id===pid);
+  const existing = cart.find(x=>x.id==pid);
   if(existing) existing.qty=(existing.qty||1)+1;
   else cart.push({id:pid,qty:1});
   saveCart(cart);
@@ -223,7 +223,7 @@ function renderCartPanel(){
   let total=0;
   let html='';
   cart.forEach(item=>{
-    const p = products.find(x=>x.id===item.id);
+    const p = products.find(x=>x.id==item.id);
     if(!p) return;
     const subtotal = p.price * (item.qty||1);
     total += subtotal;
@@ -251,16 +251,16 @@ function renderCartPanel(){
 
 function changeQty(pid,delta){
   let cart=getCart();
-  const item=cart.find(x=>x.id===pid);
+  const item=cart.find(x=>x.id==pid);
   if(!item) return;
   item.qty=(item.qty||1)+delta;
-  if(item.qty<1) cart=cart.filter(x=>x.id!==pid);
+  if(item.qty<1) cart=cart.filter(x=>x.id!=pid);
   saveCart(cart);
   updateCartCount();
   renderCartPanel();
 }
 function removeFromCart(pid){
-  let cart=getCart().filter(x=>x.id!==pid);
+  let cart=getCart().filter(x=>x.id!=pid);
   saveCart(cart);
   updateCartCount();
   renderCartPanel();
@@ -418,6 +418,11 @@ function checkSharedCart(){
         updateCartCount();
         document.getElementById('sharedBanner').classList.add('active');
         setTimeout(()=>document.getElementById('sharedBanner').classList.remove('active'),5000);
+        
+        // Remove cartId from URL so refresh doesn't overwrite it again
+        const url = new URL(window.location);
+        url.searchParams.delete('cartId');
+        window.history.replaceState({}, document.title, url.pathname + url.search);
       }
     })
     .catch(err => console.error('Failed to load shared cart:', err));
@@ -707,7 +712,7 @@ function openProductModal(pid){
   if (statusEl) statusEl.style.display = 'none';
   
   if(pid){
-    const p=getProducts().find(x=>x.id===pid);
+    const p=getProducts().find(x=>x.id==pid);
     if(!p) return;
     document.getElementById('modalTitle').textContent='Edit Product';
     document.getElementById('editProductId').value=p.id;
