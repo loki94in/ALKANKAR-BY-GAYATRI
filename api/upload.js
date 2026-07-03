@@ -70,14 +70,21 @@ module.exports = async (req, res) => {
       } else {
         const errorMsg = result && result.error && result.error.message ? result.error.message : 'Unknown ImgBB API error';
         console.error('ImgBB upload error:', errorMsg);
-        // Fall back to local storage if API call fails
+        return res.status(400).json({ error: 'ImgBB Upload Failed: ' + errorMsg });
       }
     } catch (err) {
-      console.error('Failed uploading to ImgBB, falling back to local storage:', err);
+      console.error('Failed uploading to ImgBB:', err);
+      return res.status(500).json({ error: 'Network error while contacting ImgBB.' });
     }
   }
 
-  // Local Storage Option (Fallback/Local Dev)
+  // Local Storage Option (Fallback/Local Dev) - Only reached if NO apiKey is provided
+  if (process.env.VERCEL || process.env.JSONBIN_API_KEY) {
+    return res.status(400).json({
+      error: 'Image Upload Failed: IMGBB_API_KEY is not configured in your Vercel Environment Variables. Local file storage is not supported in production.'
+    });
+  }
+
   try {
     const imagesDir = path.join(__dirname, '..', 'images');
     if (!fs.existsSync(imagesDir)) {
@@ -95,6 +102,6 @@ module.exports = async (req, res) => {
     return res.status(200).json({ status: 'success', url: relativeUrl });
   } catch (err) {
     console.error('Local file write error:', err);
-    return res.status(500).json({ error: 'Internal server error while saving file.' });
+    return res.status(500).json({ error: 'Internal server error while saving file. (Note: Vercel does not support local uploads without an ImgBB key)' });
   }
 };
