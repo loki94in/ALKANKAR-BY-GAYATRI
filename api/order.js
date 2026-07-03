@@ -12,6 +12,8 @@ module.exports = async (req, res) => {
     return res.status(403).json({ status: 'error', message: 'Forbidden: Admin access required' });
   }
 
+  try {
+
   if (method === 'GET') {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     const orders = await db.readData('orders.json', []);
@@ -83,4 +85,8 @@ module.exports = async (req, res) => {
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
+  } catch (err) {
+    console.error('order handler error:', err);
+    return res.status(500).json({ status: 'error', message: 'Storage error: ' + err.message });
+  }
 };

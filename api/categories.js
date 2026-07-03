@@ -9,6 +9,7 @@ function isAdmin(req) {
 module.exports = async (req, res) => {
   const method = req.method;
 
+  try {
   if (method === 'GET') {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     const categories = await db.readData('categories.json', DEFAULT_CATEGORIES);
@@ -54,4 +55,8 @@ module.exports = async (req, res) => {
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
+  } catch (err) {
+    console.error('categories handler error:', err);
+    return res.status(500).json({ status: 'error', message: 'Storage error: ' + err.message });
+  }
 };

@@ -914,7 +914,13 @@ function toggleVisibility(pid){
         renderAdminProducts();
         renderAdminDashboard();
       });
+    } else {
+      showToast(res.message || 'Failed to update product', 'error');
     }
+  })
+  .catch(err => {
+    console.error('Error updating visibility:', err);
+    showToast('Failed to update product', 'error');
   });
 }
 
@@ -934,7 +940,13 @@ function deleteProduct(pid){
         renderAdminProducts();
         renderAdminDashboard();
       });
+    } else {
+      showToast(res.message || 'Failed to delete product', 'error');
     }
+  })
+  .catch(err => {
+    console.error('Error deleting product:', err);
+    showToast('Failed to delete product', 'error');
   });
 }
 
@@ -1000,7 +1012,13 @@ function deleteCategory(idx){
         renderAdminCategories();
         renderCategoryFilter();
       });
+    } else {
+      showToast(res.message || 'Failed to remove category', 'error');
     }
+  })
+  .catch(err => {
+    console.error('Error deleting category:', err);
+    showToast('Failed to remove category', 'error');
   });
 }
 

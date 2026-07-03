@@ -13,6 +13,7 @@ module.exports = async (req, res) => {
     whatsapp_number: process.env.WHATSAPP_NUMBER || ''
   };
 
+  try {
   if (method === 'GET') {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     const settings = await db.readData('settings.json', defaultSettings);
@@ -39,4 +40,8 @@ module.exports = async (req, res) => {
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
+  } catch (err) {
+    console.error('settings handler error:', err);
+    return res.status(500).json({ status: 'error', message: 'Storage error: ' + err.message });
+  }
 };

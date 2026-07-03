@@ -4,6 +4,7 @@ const crypto = require('crypto');
 module.exports = async (req, res) => {
   const method = req.method;
 
+  try {
   if (method === 'POST') {
     const cartItems = req.body; // Expects an array
     if (!Array.isArray(cartItems)) {
@@ -38,5 +39,9 @@ module.exports = async (req, res) => {
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
+  } catch (err) {
+    console.error('carts handler error:', err);
+    return res.status(500).json({ status: 'error', message: 'Storage error: ' + err.message });
+  }
 };
 

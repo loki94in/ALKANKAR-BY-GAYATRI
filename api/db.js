@@ -41,14 +41,22 @@ function httpsRequest(options, body) {
       let data = '';
       res.on('data', (chunk) => (data += chunk));
       res.on('end', () => {
-        try { resolve(JSON.parse(data)); }
-        catch (e) { resolve({}); }
+        let parsed = {};
+        try { parsed = JSON.parse(data); } catch (e) { parsed = {}; }
+        resolve({ status: res.statusCode || 0, body: parsed });
       });
     });
     req.on('error', reject);
     if (body) req.write(body);
     req.end();
   });
+}
+
+function assertOk(result, action) {
+  if (result.status < 200 || result.status >= 300) {
+    const detail = (result.body && result.body.message) ? result.body.message : 'unexpected response';
+    throw new Error(`JSONBin ${action} failed (HTTP ${result.status}): ${detail}`);
+  }
 }
 
 async function fetchBin() {
@@ -58,12 +66,13 @@ async function fetchBin() {
     method: 'GET',
     headers: { 'X-Master-Key': JSONBIN_API_KEY }
   });
-  return result.record || {};
+  assertOk(result, 'read');
+  return result.body.record || {};
 }
 
 async function updateBin(record) {
   const body = JSON.stringify(record);
-  await httpsRequest({
+  const result = await httpsRequest({
     hostname: 'api.jsonbin.io',
     path: `/v3/b/${JSONBIN_BIN_ID}`,
     method: 'PUT',
@@ -73,6 +82,7 @@ async function updateBin(record) {
       'Content-Length': Buffer.byteLength(body)
     }
   }, body);
+  assertOk(result, 'write');
 }
 
 // ─── PUBLIC API ───────────────────────────────────────────────────────────────
@@ -91,7 +101,9 @@ async function readData(filename, defaultVal) {
 async function writeData(filename, data) {
   const key = filename.replace('.json', '');
   if (!isCloud) {
-    return writeDataLocal(filename, data);
+    const ok = writeDataLocal(filename, data);
+    if (!ok) throw new Error(`Failed to write ${filename} to local storage`);
+    return true;
   }
   const bin = await fetchBin();
   bin[key] = data;
