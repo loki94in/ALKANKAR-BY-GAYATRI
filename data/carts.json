@@ -4,5 +4,22 @@
       "id": 1,
       "qty": 2
     }
+  ],
+  "cart_ed504a368b9eebfe": [
+    {
+      "id": 2,
+      "name": "Meenakari Jhumkas",
+      "qty": 1
+    },
+    {
+      "id": 1,
+      "name": "Kundan Choker Set",
+      "qty": 1
+    },
+    {
+      "id": 3,
+      "name": "Bridal Bangles Set",
+      "qty": 1
+    }
   ]
 }
