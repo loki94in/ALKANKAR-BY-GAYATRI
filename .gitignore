@@ -11,3 +11,7 @@ images/uploads/
 # OS specific files
 .DS_Store
 Thumbs.db
+
+# Expo
+.expo/
+alankar_app/.expo/
