@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Alankar by Gayatri",
+    "slug": "alankar_app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/logo.jpg",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/images/logo.jpg",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F0101"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/logo.jpg",
+        "backgroundColor": "#0F0101"
+      },
+      "package": "com.gayatri.alankar"
+    },
+    "scheme": "alankar",
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ]
+  }
+}

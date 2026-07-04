@@ -59,7 +59,7 @@ JSONBin stores your products, categories, and orders in the cloud so they persis
 
 ## Step 4: That's It!
 
-- Your live URL will be like: `https://alankar-by-gayatri.vercel.app`
+- Your live URL will be like: `https://alkankar-by-gayatri.vercel.app`
 - Share that URL with your customers. Anyone can browse and place enquiries.
 - Log in to the Admin panel **directly on the live site** to add/edit/delete products and categories. Changes are saved to JSONBin and appear instantly.
 

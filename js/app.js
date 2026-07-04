@@ -32,12 +32,14 @@ function loadDataFromServer(callback) {
   .then(([products, categories]) => {
     cachedProducts = products;
     cachedCategories = categories;
+    cleanOrphanedCartItems();
     if (callback) callback();
   })
   .catch(err => {
     console.error('Failed to load data from server, falling back to local defaults:', err);
     cachedProducts = DEFAULT_PRODUCTS;
     cachedCategories = DEFAULT_CATEGORIES;
+    cleanOrphanedCartItems();
     if (callback) callback();
   });
 }
@@ -49,12 +51,22 @@ function getProducts(){return cachedProducts;}
 function getCategories(){return cachedCategories;}
 function getCart(){return getData('alg_cart',[]);}
 function saveCart(c){setData('alg_cart',c);}
+function cleanOrphanedCartItems() {
+  const cart = getCart();
+  const products = getProducts();
+  if (products && products.length > 0) {
+    const cleanedCart = cart.filter(item => products.some(p => p.id == item.id));
+    if (cleanedCart.length !== cart.length) {
+      saveCart(cleanedCart);
+    }
+  }
+}
 function getFavorites(){return getData('alg_favorites',[]);}
 function saveFavorites(f){setData('alg_favorites',f);}
 function toggleFavorite(pid){
   let favorites = getFavorites();
   const products = getProducts();
-  const p = products.find(x => x.id === pid);
+  const p = products.find(x => x.id == pid);
   if(!p) return;
   
   const idx = favorites.indexOf(pid);
@@ -313,7 +325,7 @@ function shareOnWhatsApp(){
   let msg='✨ *Alankar by Gayatri* — My Wishlist\n\n';
   let total=0;
   cart.forEach(c=>{
-    const p=products.find(x=>x.id===c.id);
+    const p=products.find(x=>x.id==c.id);
     if(p){
       msg+=`• ${p.name} — ₹${p.price.toLocaleString('en-IN')} x${c.qty||1}\n`;
       total+=p.price*(c.qty||1);
@@ -363,7 +375,7 @@ function enquireOnWhatsApp(){
   let msg='🙏 Namaste! I am interested in the following pieces from Alankar by Gayatri:\n\n';
   let total=0;
   cart.forEach(c=>{
-    const p=products.find(x=>x.id===c.id);
+    const p=products.find(x=>x.id==c.id);
     if(p){
       msg+=`• ${p.name} — ₹${p.price.toLocaleString('en-IN')} (Qty: ${c.qty||1})\n`;
       total+=p.price*(c.qty||1);
@@ -1077,7 +1089,7 @@ function processOrder() {
   
   let total = 0;
   cart.forEach(c => {
-    const p = products.find(x => x.id === c.id);
+    const p = products.find(x => x.id == c.id);
     if (p) {
       msg += `• ${p.name} — ₹${p.price.toLocaleString('en-IN')} (Qty: ${c.qty || 1})\n`;
       total += p.price * (c.qty || 1);
@@ -1099,12 +1111,12 @@ function processOrder() {
 
 function submitOrder(name, phone, address, cart, products) {
   const orderDetails = cart.map(c => {
-    const p = products.find(x => x.id === c.id);
+    const p = products.find(x => x.id == c.id);
     return p ? `${p.name} (Qty: ${c.qty || 1})` : '';
   }).filter(Boolean).join(', ');
   
   const total = cart.reduce((sum, c) => {
-    const p = products.find(x => x.id === c.id);
+    const p = products.find(x => x.id == c.id);
     return sum + (p ? p.price * (c.qty || 1) : 0);
   }, 0);
   
