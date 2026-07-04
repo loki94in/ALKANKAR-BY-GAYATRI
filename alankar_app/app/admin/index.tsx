@@ -5,12 +5,14 @@ import * as SecureStore from 'expo-secure-store';
 import { Colors } from '../../constants/Colors';
 import { ADMIN_TOKEN_KEY } from '../../services/api';
 import { getAllProducts, getAllCategories } from '../../services/database';
+import { runSync } from '../../services/sync';
 
 export default function AdminDashboard() {
   const router = useRouter();
   const [productCount, setProductCount] = useState(0);
   const [categoryCount, setCategoryCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     loadStats();
@@ -27,6 +29,20 @@ export default function AdminDashboard() {
       console.error('Failed to load admin stats:', e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSync = async () => {
+    try {
+      setSyncing(true);
+      await runSync(true);
+      loadStats();
+      alert('Database synced successfully!');
+    } catch (e: any) {
+      console.error('Sync failed:', e);
+      alert('Sync failed: ' + e.message);
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -67,16 +83,42 @@ export default function AdminDashboard() {
       
       <Pressable 
         style={styles.actionBtn}
-        onPress={() => alert('Add Product Flow (Phase 3)')}
+        onPress={() => router.push('/admin/products')}
       >
-        <Text style={styles.actionBtnText}>Add New Product</Text>
+        <Text style={styles.actionBtnText}>Manage Products</Text>
       </Pressable>
 
       <Pressable 
         style={styles.actionBtn}
-        onPress={() => alert('Manage Categories (Phase 3)')}
+        onPress={() => router.push('/admin/categories')}
       >
         <Text style={styles.actionBtnText}>Manage Categories</Text>
+      </Pressable>
+
+      <Pressable 
+        style={styles.actionBtn}
+        onPress={() => router.push('/admin/orders')}
+      >
+        <Text style={styles.actionBtnText}>View Orders</Text>
+      </Pressable>
+
+      <Pressable 
+        style={styles.actionBtn}
+        onPress={() => router.push('/admin/settings')}
+      >
+        <Text style={styles.actionBtnText}>Store Settings</Text>
+      </Pressable>
+
+      <Pressable 
+        style={[styles.actionBtn, { borderColor: Colors.dark.gold }]}
+        onPress={handleSync}
+        disabled={syncing}
+      >
+        {syncing ? (
+          <ActivityIndicator size="small" color={Colors.dark.gold} />
+        ) : (
+          <Text style={[styles.actionBtnText, { color: Colors.dark.gold }]}>Sync Local & Server</Text>
+        )}
       </Pressable>
 
       <Pressable 

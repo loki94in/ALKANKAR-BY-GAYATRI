@@ -24,6 +24,17 @@ export interface DbSyncItem {
   retries: number;
 }
 
+export interface DbOrder {
+  id: string;
+  date: string;
+  name: string;
+  phone: string;
+  address: string;
+  items: string;
+  total: number;
+  status: string;
+}
+
 export function getDb() {
   if (!db) {
     db = SQLite.openDatabaseSync('alankar_db.db');
@@ -144,4 +155,68 @@ export function deleteSyncItem(id: number) {
 export function incrementSyncRetry(id: number, retries: number) {
   const database = getDb();
   database.runSync('UPDATE sync_queue SET retries = ? WHERE id = ?', [retries, id]);
+}
+
+// Order operations
+export function getAllOrders(): DbOrder[] {
+  const database = getDb();
+  return database.getAllSync<DbOrder>('SELECT * FROM orders ORDER BY date DESC');
+}
+
+export function saveOrders(orders: DbOrder[]) {
+  const database = getDb();
+  database.withTransactionSync(() => {
+    database.runSync('DELETE FROM orders');
+    for (const o of orders) {
+      database.runSync(
+        `INSERT INTO orders (id, date, name, phone, address, items, total, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [o.id, o.date, o.name, o.phone, o.address, o.items, o.total, o.status]
+      );
+    }
+  });
+}
+
+export function addOrderLocal(o: DbOrder) {
+  const database = getDb();
+  database.runSync(
+    `INSERT OR REPLACE INTO orders (id, date, name, phone, address, items, total, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [o.id, o.date, o.name, o.phone, o.address, o.items, o.total, o.status]
+  );
+}
+
+// Product CRUD operations
+export function addProductLocal(p: DbProduct) {
+  const database = getDb();
+  database.runSync(
+    `INSERT OR REPLACE INTO products (id, name, category, price, origPrice, stock, desc, image, visible, featured)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [p.id, p.name, p.category, p.price, p.origPrice ?? null, p.stock, p.desc, p.image, p.visible, p.featured]
+  );
+}
+
+export function updateProductLocal(p: DbProduct) {
+  const database = getDb();
+  database.runSync(
+    `UPDATE products SET name = ?, category = ?, price = ?, origPrice = ?, stock = ?, desc = ?, image = ?, visible = ?, featured = ?
+     WHERE id = ?`,
+    [p.name, p.category, p.price, p.origPrice ?? null, p.stock, p.desc, p.image, p.visible, p.featured, p.id]
+  );
+}
+
+export function deleteProductLocal(id: number) {
+  const database = getDb();
+  database.runSync('DELETE FROM products WHERE id = ?', [id]);
+}
+
+// Category CRUD operations
+export function addCategoryLocal(name: string) {
+  const database = getDb();
+  database.runSync('INSERT OR IGNORE INTO categories (name) VALUES (?)', [name]);
+}
+
+export function deleteCategoryLocal(name: string) {
+  const database = getDb();
+  database.runSync('DELETE FROM categories WHERE name = ?', [name]);
 }

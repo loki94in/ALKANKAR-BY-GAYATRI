@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { useStore } from '../../store/useStore';
 import { getAllProducts, saveProducts, getAllCategories, saveCategories, DbProduct } from '../../services/database';
+import { runSync, checkOnline } from '../../services/sync';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -12,18 +13,39 @@ export default function HomeScreen() {
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
 
-  const { addToCart, toggleFavorite, favorites } = useStore();
+  const { addToCart, toggleFavorite, favorites, setOfflineStatus } = useStore();
 
   useEffect(() => {
     loadLocalCatalog();
+    handleSync();
   }, []);
+
+  const handleSync = async () => {
+    try {
+      const online = await checkOnline();
+      setIsOfflineMode(!online);
+      setOfflineStatus(!online);
+      if (online) {
+        setRefreshing(true);
+        await runSync();
+        loadLocalCatalog();
+      }
+    } catch (e) {
+      console.error('Sync failed on Home launch/refresh:', e);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const loadLocalCatalog = () => {
     try {
-      setLoading(true);
+      setLoading(false); // Disable initial full screen loading blocker if catalog already has items
       let localProducts = getAllProducts();
       let localCategories = getAllCategories();
+
 
       // If local DB is empty, seed it with the default website items
       if (localProducts.length === 0) {
@@ -203,6 +225,12 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      {isOfflineMode && (
+        <View style={styles.offlineBanner}>
+          <Text style={styles.offlineText}>OFFLINE MODE — Showing cached catalog</Text>
+        </View>
+      )}
+
       {/* Category List horizontal scroll */}
       <View style={styles.categoriesContainer}>
         <FlatList
@@ -235,6 +263,8 @@ export default function HomeScreen() {
         numColumns={2}
         columnWrapperStyle={styles.gridRow}
         contentContainerStyle={styles.gridContainer}
+        refreshing={refreshing}
+        onRefresh={handleSync}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No products found in this category.</Text>
@@ -404,5 +434,18 @@ const styles = StyleSheet.create({
   emptyText: {
     color: Colors.dark.textDim,
     textAlign: 'center',
+  },
+  offlineBanner: {
+    backgroundColor: '#E57373',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  offlineText: {
+    color: '#1A1A1A',
+    fontSize: 11,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
 });

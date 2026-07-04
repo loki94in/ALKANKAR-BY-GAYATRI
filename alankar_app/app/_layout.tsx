@@ -44,6 +44,10 @@ export default function RootLayout() {
         <Stack.Screen name="product/[id]" options={{ title: 'Product Details' }} />
         <Stack.Screen name="login" options={{ title: 'Admin Login', presentation: 'modal' }} />
         <Stack.Screen name="admin/index" options={{ title: 'Admin Dashboard', headerBackVisible: false }} />
+        <Stack.Screen name="admin/products" options={{ title: 'Manage Products' }} />
+        <Stack.Screen name="admin/categories" options={{ title: 'Manage Categories' }} />
+        <Stack.Screen name="admin/orders" options={{ title: 'Manage Orders' }} />
+        <Stack.Screen name="admin/settings" options={{ title: 'Store Settings' }} />
       </Stack>
     </GestureHandlerRootView>
   );
